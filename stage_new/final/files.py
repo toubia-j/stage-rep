@@ -15,31 +15,18 @@ from sklearn.multioutput import MultiOutputClassifier
 from sklearn.preprocessing import MultiLabelBinarizer
 from tslearn.clustering import TimeSeriesKMeans
 from sklearn.metrics import mean_squared_error, mean_absolute_error
-
-"""
-
-consommation_partitionner_24h = {
-    1: pd.read_csv("consommation_partitionner_24h_1.csv"),
-    2: pd.read_csv("consommation_partitionner_24h_2.csv"),
-    3: pd.read_csv("consommation_partitionner_24h_3.csv"),
-    4: pd.read_csv("consommation_partitionner_24h_4.csv")
-}
-
-consommation_partitionner_48h = {
-    1: pd.read_csv("consommation_partitionner_48h_1.csv"),
-    2: pd.read_csv("consommation_partitionner_48h_2.csv"),
-    3: pd.read_csv("consommation_partitionner_48h_3.csv"),
-    4: pd.read_csv("consommation_partitionner_48h_4.csv")
-}
-
-"""
+import sys
+import importlib   
+import utils
+importlib.reload(utils)
+from utils import *
 
 
 
 conso_tou = pd.read_csv("../data/simulation_data/conso_kmeans_data/clusters_heat_perif_toulouse_kmeans")
 conso_zur = pd.read_csv("../data/simulation_data/conso_kmeans_data/clusters_heat_perif_zurich_kmeans")
 conso_sev = pd.read_csv("../data/simulation_data/conso_kmeans_data/clusters_cool_perif_seville_kmeans")
-#occ=pd.read_csv("Occupancy_per_hour",delimiter="\t")
+occupation=pd.read_csv("../data/simulation_data/Occupancy_per_hour",delimiter="\t")
 
 files = {
     "agen": "../data/simulation_data/Meteo_Perif_Toulouse_Contemporain/Agen/Simulation_Outputs",
@@ -70,6 +57,34 @@ files3 = {
     "Malaga": "../data/simulation_data/Meteo_Perif_Seville_Contemporain/Malaga/Meteo_input",
     "Sevilla": "../data/simulation_data/Meteo_Perif_Seville_Contemporain/Sevilla/Meteo_input"  
 }
+
+
+
+
+"""
+Décomposition des données : Température extérieure, intérieure, humidité, vitesse du vent, angle solaire, réflectivité du sol,
+pour chaque ville sur une période de 24h. Chaque variable est stockée dans un DataFrame distinct par ville.
+"""
+for city, path in files.items():
+      globals()[f"Text_{city}"] = extract_columns(files[city],1)
+
+for city3, path3 in files3.items():
+      globals()[f"hum_{city3}"] = extract_columns(files3[city3],3)  
+
+for city4, path4 in files3.items():
+      globals()[f"wind_{city4}"] = extract_columns(files3[city4],4)  
+
+for city5, path5 in files3.items():
+      globals()[f"solar_{city5}"] = extract_columns(files3[city5],5)  
+
+for city6, path6 in files3.items():
+      globals()[f"ground_{city6}"] = extract_columns(files3[city6],10)  
+
+for city, path in files.items():
+      globals()[f"Tint_{city}"] = extract_columns(files[city],2)
+    
+
+
 
 
 
