@@ -45,6 +45,29 @@ seville_meteo = {
     "Sevilla": "data/simulation_data/Meteo_Perif_Seville_Contemporain/Sevilla/Meteo_input"  
 }
 
+files8 = {
+    "2018": "data/simulated_data_7years/Mal_isole/2018/Simulation_Outputs",
+    "2019": "data/simulated_data_7years/Mal_isole/2019/Simulation_Outputs",
+    "2020": "data/simulated_data_7years/Mal_isole/2020/Simulation_Outputs",
+    "2021": "data/simulated_data_7years/Mal_isole/2021/Simulation_Outputs",
+    "2022": "data/simulated_data_7years/Mal_isole/2022/Simulation_Outputs",
+    "2023": "data/simulated_data_7years/Mal_isole/2023/Simulation_Outputs",
+    "2024": "data/simulated_data_7years/Mal_isole/2024/Simulation_Outputs"   
+}
+files7 = {
+    "2018": "data/simulated_data_7years/Mal_isole/2018/Weather_Dataset.txt",
+    "2019": "data/simulated_data_7years/Mal_isole/2019/Weather_Dataset.txt",
+    "2020": "data/simulated_data_7years/Mal_isole/2020/Weather_Dataset.txt",
+    "2021": "data/simulated_data_7years/Mal_isole/2021/Weather_Dataset.txt",
+    "2022": "data/simulated_data_7years/Mal_isole/2022/Weather_Dataset.txt",
+    "2023": "data/simulated_data_7years/Mal_isole/2023/Weather_Dataset.txt",
+    "2024": "data/simulated_data_7years/Mal_isole/2024/Weather_Dataset.txt"   
+}
+
+
+
+
+
 
 models = {
     "Random Forest": RandomForestClassifier(n_estimators=100, random_state=42),

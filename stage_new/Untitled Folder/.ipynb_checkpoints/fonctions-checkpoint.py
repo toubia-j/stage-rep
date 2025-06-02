@@ -21,7 +21,8 @@ from keras.models import Sequential
 from keras.layers import SimpleRNN, Dense, Dropout,LSTM
 from tensorflow.keras.layers import Conv1D, MaxPooling1D  ,Conv2D, MaxPooling2D ,Flatten ,Reshape
 import tensorflow as tf
-
+from sklearn.metrics import f1_score, accuracy_score, confusion_matrix, hamming_loss, zero_one_loss
+from sklearn.preprocessing import MultiLabelBinarizer
 
 
 def extract_columns(filepath, column_index=4):
@@ -102,36 +103,42 @@ def clustering(df, n_parts=1, status_column="heat_on", n_clusters_list=None):
 
 
 
+
 def extract_and_store_data(files, prefix, column_index):
     """
     Pour chaque fichier dans `files`, extrait toutes les colonnes
-    et les stocke dans des variables globales nommées comme <NomColonne>_<ville>
-    Exemple : Text_toulouse, Hum_agen, wind_zurich_kloten
+    et les stocke dans des variables globales nommées comme <NomColonne>_<ville>.
     """
     for city, path in files.items():
-        data = extract_columns(path, column_index)
-        globals()[f"{prefix}{city}"] = data
-
+        data = extract_columns(path, column_index)  # Extraire les données pour chaque ville
+        globals()[f"{prefix}{city}"] = data  # Stocker dans la variable globale
 
 def extract_and_combine_all(city_groups, prefix_column_map):
     """
-     Combine toutes les colonnes extraites (ayant le même préfixe) pour le groupe de villes actuel
-     Par exemple, combine Text_agen, Text_albi, etc., en un seul DataFrame : Text_combined_toulouse
-
+    Combine toutes les colonnes extraites (ayant le même préfixe) pour le groupe de villes actuel.
+    Exemple : combine Text_agen, Text_albi, etc., en un seul DataFrame : Text_combined_toulouse.
     """
+    combined_data = {}  # Dictionnaire pour stocker les DataFrames combinés
+
+    # Parcourir les groupes de villes
     for group_name, files in city_groups.items():
+        # Parcourir les préfixes et indices de colonnes
         for prefix, col_index in prefix_column_map.items():
+            # Extraire et stocker les données
             extract_and_store_data(files, prefix, col_index)
 
+            # Combiner les DataFrames pour chaque ville
             dfs = []
             for city in files.keys():
                 var_name = f"{prefix}{city}"
                 if var_name in globals():
-                    dfs.append(globals()[var_name])
-            if dfs:
-                combined_name = f"{prefix}combined_{group_name}"
-                globals()[combined_name] = pd.concat(dfs, axis=0).reset_index(drop=True)
+                    dfs.append(globals()[var_name])  # Ajouter à la liste des DataFrames à combiner
 
+            if dfs:  # Si des DataFrames existent à combiner
+                combined_name = f"{prefix}combined_{group_name}"  # Nom du DataFrame combiné
+                combined_data[combined_name] = pd.concat(dfs, axis=0).reset_index(drop=True)  # Combinaison des DataFrames
+
+    return combined_data  # Retourner les DataFrames combinés
 
 
 def add_profil_and_status(input_df, conso_df, status_col="heat_on", profil_cols=None):
@@ -159,12 +166,28 @@ def add_profil_and_status(input_df, conso_df, status_col="heat_on", profil_cols=
 
 
 
-import time
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-from sklearn.metrics import f1_score, accuracy_score, confusion_matrix, hamming_loss, zero_one_loss
-from sklearn.preprocessing import MultiLabelBinarizer
+
+def balance_clusters(X, y):
+    """
+    Équilibre les clusters en ajustant le cluster majoritaire  pour avoir le même nombre d'exemples 
+    que le cluster le plus grand parmi les autres.
+    """
+    print(y.columns)
+    df = X.copy()
+    df['clusters'] = y
+    print(df.columns)
+    cluster_groups = df.groupby('clusters')
+    cluster_counts = df['clusters'].value_counts()
+    max_other_clusters = cluster_counts[cluster_counts.index != 3.0].max()
+    cluster_3 = cluster_groups.get_group(3.0)
+    cluster_3_resampled = cluster_3.sample(n=max_other_clusters, random_state=42)
+    balanced_df = pd.concat([cluster_groups.get_group(cluster) for cluster in cluster_counts.index if cluster != 3.0] +[cluster_3_resampled])
+    balanced_df = balanced_df.sample(frac=1, random_state=42).reset_index(drop=True)
+    X_balanced = balanced_df.drop(columns=["clusters"])
+    y_balanced = balanced_df["clusters"]
+    return X_balanced, y_balanced
+    
+
 
 def evaluate_models_split(df, target_cols, models, split_ratio=8):
     """
@@ -176,8 +199,8 @@ def evaluate_models_split(df, target_cols, models, split_ratio=8):
     """
     multi_label = isinstance(target_cols, list) and len(target_cols) > 1
     y = df[target_cols] if multi_label else df[[target_cols]]
-    X = df.drop(columns=target_cols if multi_label else [target_cols])
-
+    X = df.drop(columns=target_cols if multi_label else [target_cols])  
+    
     split_index = int((X.shape[0] * split_ratio) / 10)
     X_train, X_test = X.iloc[:split_index], X.iloc[split_index:]
     y_train, y_test = y.iloc[:split_index], y.iloc[split_index:]
@@ -253,24 +276,25 @@ def evaluate_models_split(df, target_cols, models, split_ratio=8):
 
 
 
-def concat_and_create_final_df(city, prefixes):
+def concat_and_create_final_df(city, prefixes, combined_data):
     """
-    Concatène les DataFrames spécifiés par des préfixes pour une ville donnée afin de former 
-    une entrée multivariée  pour un modèle de prédiction.
-    Le nom du DataFrame final est généré  selon la structure :
-    "{prefix1}_{prefix2}_..._combined_{city}"
-    Par exemple : Text_Solar_Ground_combined_toulouse
+    Concatène les DataFrames du dictionnaire `combined_data` pour une ville donnée
+    en un seul DataFrame multivarié.
     """
     dfs = []
     for prefix in prefixes:
-        var_name = f"{prefix}_combined_{city}"  
-        if var_name in globals():
-            dfs.append(globals()[var_name]) 
+        key = f"{prefix}combined_{city}"
+        if key in combined_data:
+            dfs.append(combined_data[key])
+        else:
+            print(f"Warning: {key} not found in combined_data")
 
-    final_df_name = f"{'_'.join(prefixes)}_combined_{city}" 
-    final_df = pd.concat(dfs, axis=1).reset_index(drop=True)  
-    globals()[final_df_name] = final_df  
+    if not dfs:
+        raise ValueError("No objects to concatenate")
+
+    final_df = pd.concat(dfs, axis=1).reset_index(drop=True)
     return final_df
+
 
 
 def plot_f1_accuracy_results(results_dict, df_name):
@@ -318,7 +342,7 @@ def train_and_evaluate(model, X_train, y_train, X_test, y_test, scaler_temp, sca
     model.compile(optimizer='adam', loss='mean_squared_error', metrics=['mae', 'mse'])
     early_stopping = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
     
-    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.2, random_state=42)
+    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.1, shuffle=False)
     history = model.fit(X_train, y_train, epochs=100, batch_size=32, validation_data=(X_val, y_val), callbacks=[early_stopping])
     
     # Courbe de loss
@@ -413,6 +437,8 @@ def make_column_names_unique(columns):
             result.append(f"{col}_{seen[col]}")
     return result
 
+
+    
 def preprocess_data(Text_combined, clustering_heat, Test_Text_heat, name_combined):
     """
     -Cette fonction prépare les données pour un modèle LSTM.
@@ -467,9 +493,6 @@ def preprocess_data(Text_combined, clustering_heat, Test_Text_heat, name_combine
     # Appliquer downsampling sur la classe majoritaire
     df2 = downsample_majority_class(df, 'heat_on')
     df2.columns = make_column_names_unique(df2.columns)
-
-    # Vérification de l'index après downsampling
-    print("Index après downsampling : ", df2.index)
 
     n_blocks = len(name_combined.split('_combined')[0].split('_'))
     parts = name_combined.split('_combined')[0].split('_')
@@ -531,4 +554,4 @@ def preprocess_data(Text_combined, clustering_heat, Test_Text_heat, name_combine
 
    
 
-    return X_train2, X_test2, y_train2, y_test2
+    return X_train2, X_test2, y_train2, y_test2,scaler_temp,scaler_cons
