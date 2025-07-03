@@ -15,7 +15,7 @@ from sklearn.multioutput import MultiOutputClassifier
 from sklearn.preprocessing import MultiLabelBinarizer
 from tslearn.clustering import TimeSeriesKMeans
 from sklearn.metrics import mean_squared_error, mean_absolute_error
-
+s
 """
 
 consommation_partitionner_24h = {

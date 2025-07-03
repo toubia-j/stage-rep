@@ -17,7 +17,7 @@ from tslearn.clustering import TimeSeriesKMeans
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 
 
-
+"""
 consommation_partitionner_24h = {
     1: pd.read_csv("consommation_partitionner_24h_1.csv"),
     2: pd.read_csv("consommation_partitionner_24h_2.csv"),
@@ -31,7 +31,7 @@ consommation_partitionner_48h = {
     3: pd.read_csv("consommation_partitionner_48h_3.csv"),
     4: pd.read_csv("consommation_partitionner_48h_4.csv")
 }
-
+"""
 conso_tou = pd.read_csv("conso_heat_perif_toulouse")
 conso_zur = pd.read_csv("conso_heat_perif_zurich")
 conso_sev = pd.read_csv("conso_cool_perif_seville")
