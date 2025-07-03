@@ -122,6 +122,8 @@ def evaluate_clustering_cooling(consommation_fr,binaire):
     print(f"Davies-Bouldin Index: {db_score}")
     print(f"Silhouette Score: {sil_score}")
 
+    return sil_score,db_score
+
 
 
 def standardize_data(X):

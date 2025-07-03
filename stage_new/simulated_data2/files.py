@@ -16,8 +16,8 @@ from sklearn.preprocessing import MultiLabelBinarizer
 from tslearn.clustering import TimeSeriesKMeans
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 
-
 """
+
 consommation_partitionner_24h = {
     1: pd.read_csv("consommation_partitionner_24h_1.csv"),
     2: pd.read_csv("consommation_partitionner_24h_2.csv"),
